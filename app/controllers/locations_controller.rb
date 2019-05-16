@@ -4,7 +4,22 @@ class LocationsController < ApplicationController
   # GET /locations
   # GET /locations.json
   def index
-    @locations = Location.order('updated_at desc').limit(10)
+    respond_to do |format|
+      format.html do
+        @locations = Location.order('updated_at desc').limit(10)
+      end
+      format.csv do
+        headers["X-Accel-Buffering"] = "no"
+        headers["Cache-Control"] = "no-cache"
+        headers["Content-Type"] = "text/csv; charset=utf-8"
+        headers["Content-Disposition"] =
+           %(attachment; filename="#{csv_filename}")
+        headers["Last-Modified"] = Time.zone.now.ctime.to_s
+        self.response_body = CsvBuilder.build_csv_enumerator(['address','city'], Location.csv_collection)
+      end
+    end
+  ensure
+    response.stream.close
   end
 
   # GET /locations/1
@@ -70,5 +85,10 @@ class LocationsController < ApplicationController
     # Never trust parameters from the scary internet, only allow the white list through.
     def location_params
       params.require(:location).permit(:address,:city)
+    end
+
+
+    def csv_filename
+      "report-#{Time.zone.now.to_date.to_s(:default)}.csv"
     end
 end
