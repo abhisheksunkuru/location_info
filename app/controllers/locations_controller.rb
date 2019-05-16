@@ -18,8 +18,7 @@ class LocationsController < ApplicationController
         self.response_body = CsvBuilder.build_csv_enumerator(['address','city'], Location.csv_collection)
       end
     end
-  ensure
-    response.stream.close
+
   end
 
   # GET /locations/1
@@ -38,12 +37,16 @@ class LocationsController < ApplicationController
 
   # POST /locations
   # POST /locations.json
+  # get the location information through post call
   def create
-    @location = Location.new(location_params)
+    @location = Location.find_or_initialize_by(location_params)
 
     respond_to do |format|
-      if @location.save
+      if !@location.persisted? && @location.save
         format.html { redirect_to @location, notice: 'Location was successfully created.' }
+        format.json { render :show, status: :created, location: @location }
+      elsif @location.persisted?
+        format.html { redirect_to @location, notice: 'Location found.' }
         format.json { render :show, status: :created, location: @location }
       else
         format.html { render :new }
