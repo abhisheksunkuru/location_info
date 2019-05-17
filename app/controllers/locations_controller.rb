@@ -1,13 +1,13 @@
 class LocationsController < ApplicationController
+  skip_before_action :verify_authenticity_token, if: :json_request?,only: [:create]
   before_action :set_location, only: [:show, :edit, :update, :destroy]
 
   # GET /locations
   # GET /locations.json
   def index
+    @locations = Location.order('updated_at desc').limit(10)
     respond_to do |format|
-      format.html do
-        @locations = Location.order('updated_at desc').limit(10)
-      end
+      format.html
       format.csv do
         headers["X-Accel-Buffering"] = "no"
         headers["Cache-Control"] = "no-cache"
@@ -17,6 +17,7 @@ class LocationsController < ApplicationController
         headers["Last-Modified"] = Time.zone.now.ctime.to_s
         self.response_body = CsvBuilder.build_csv_enumerator(['address','city'], Location.csv_collection)
       end
+      format.json
     end
 
   end
